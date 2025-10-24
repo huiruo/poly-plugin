@@ -7,6 +7,7 @@ import { StartSelectEnum } from '~/components/content/helper'
 
 export function Main() {
   const [tab, setTab] = useState<TabInfo>(null)
+  const [inputValue, setInputValue] = useState<string>('')
 
   const getCurrentTab = async () => {
     const [tab] = await chrome.tabs.query({
@@ -15,6 +16,21 @@ export function Main() {
     })
 
     setTab(tab as TabInfo)
+    return tab as TabInfo
+  }
+
+  // 向 content script 请求当前 input 值（也会接收 content 主动推送）
+  const fetchInputValue = async (tabId?: number) => {
+    try {
+      const id = tabId ?? tab?.id
+      if (!id) return
+      const res = await chrome.tabs.sendMessage(id, { type: ACTIONS.QueryInput })
+      if (res?.value != null) {
+        setInputValue(String(res.value))
+      }
+    } catch (err) {
+      console.warn('fetchInputValue failed', err)
+    }
   }
 
   const onClipEntirePage = async () => {
@@ -36,7 +52,7 @@ export function Main() {
 
   const initTabsListener = () => {
     chrome.runtime.onMessage.addListener(
-      (request: MsgRes<keyof typeof ACTIONS, any>, sender, sendResponse) => {
+      (request: MsgRes<keyof typeof ACTIONS | keyof typeof BACKGROUND_EVENTS, any>, sender, sendResponse) => {
         console.log('%c=popup.tsx add Listener:', 'color:gold', request)
 
         switch (request.type) {
@@ -52,8 +68,11 @@ export function Main() {
               '%c=popup.tsx-add Listener GetPageContent:',
               'color: gold',
             )
-            // sendResponse({ staus: 'loading' })
-            return Promise.resolve({ response: 'Hi from content script' })
+            // update UI with incoming value from content script
+            if (request.payload?.value != null) {
+              setInputValue(String(request.payload.value))
+            }
+            return true
           default:
             // Handle other cases here
             break
@@ -87,13 +106,21 @@ export function Main() {
   }
 
   useEffect(() => {
-    initTabsListener()
-    getCurrentTab()
+    const init = async () => {
+      initTabsListener()
+      const current = await getCurrentTab()
+      if (current?.id) {
+        await fetchInputValue(current.id)
+      }
+    }
+    init()
   }, [])
 
   return (
     <div className={styles.container}>
-      {/* your currentUrl is: {tab?.url} */}
+      {/* 显示从页面获取到的 input 值 */}
+      <div style={{ marginBottom: 8, fontWeight: 600 }}>Input value: {inputValue ?? '-'}</div>
+
       <ul className={styles.ul}>
         <li
           className={styles.item}
@@ -106,27 +133,7 @@ export function Main() {
           onClick={() => onAreaSelect(StartSelectEnum.screenShot)}>
           Area screenshots
         </li>
-
-        {/* <li
-          className={styles.item}
-          onClick={() => onAreaSelect(StartSelectEnum.areaSelect)}>
-          Area select
-        </li> */}
-
-        {/* <li className={styles.item} onClick={onClipEntirePage}>
-          Clip ClipEntire Page
-        </li> */}
-
-        {/* <li className={styles.item} onClick={onEnterManually}>
-          Enter content manually
-        </li> */}
       </ul>
-
-      {/* <div>
-        <button className={styles.saveBtn} onClick={onSubmit}>
-          Save to penx
-        </button>
-      </div> */}
     </div>
   )
 }
