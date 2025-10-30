@@ -4,6 +4,7 @@ import { ACTIONS, BACKGROUND_EVENTS } from '~/common/action'
 import type { MsgRes, TabInfo } from '~/common/types'
 import styles from '~/components/popup/main.module.css'
 import { StartSelectEnum } from '~/components/content/helper'
+import { BinanceIframe } from '~/components/popup/binanceIframe'
 
 export function Main() {
   const [tab, setTab] = useState<TabInfo>(null)
@@ -30,6 +31,13 @@ export function Main() {
       }
     } catch (err) {
       console.warn('fetchInputValue failed', err)
+    }
+  }
+
+  // 刷新输入值
+  const refreshInputValue = () => {
+    if (tab?.id) {
+      fetchInputValue(tab.id)
     }
   }
 
@@ -119,7 +127,26 @@ export function Main() {
   return (
     <div className={styles.container}>
       {/* 显示从页面获取到的 input 值 */}
-      <div style={{ marginBottom: 8, fontWeight: 600 }}>Input value: {inputValue ?? '-'}</div>
+      <div style={{ marginBottom: 16, padding: 12, backgroundColor: '#f5f5f5', borderRadius: 8 }}>
+        <div style={{ fontWeight: 600, marginBottom: 8 }}>Polymarket Input v2 Value:</div>
+        <div style={{ fontSize: 18, color: '#333', marginBottom: 8 }}>
+          {inputValue || 'No value detected'}
+        </div>
+        <button 
+          onClick={refreshInputValue}
+          style={{ 
+            padding: '4px 8px', 
+            fontSize: 12, 
+            backgroundColor: '#007bff', 
+            color: 'white', 
+            border: 'none', 
+            borderRadius: 4,
+            cursor: 'pointer'
+          }}
+        >
+          Refresh
+        </button>
+      </div>
 
       <ul className={styles.ul}>
         <li
@@ -134,6 +161,8 @@ export function Main() {
           Area screenshots
         </li>
       </ul>
+
+      <BinanceIframe />
     </div>
   )
 }

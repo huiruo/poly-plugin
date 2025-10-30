@@ -1,7 +1,7 @@
 export const ACTIONS = {
   EnterManually: 'ENTER_MANUALLY',
   AreaSelect: 'AREA_SELECT',
-  QueryInput: 'QueryInput', // <- 新增：popup -> content 请求输入值
+  QueryInput: 'QUERY_INPUT', // popup -> content 请求输入值
 }
 
 export const BACKGROUND_EVENTS = {
